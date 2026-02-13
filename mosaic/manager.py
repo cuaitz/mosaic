@@ -5,7 +5,7 @@ import os
 import time
 from typing import Any, Type, TypeVar, Generic
 
-from save_file import SaveFile
+from .save import SaveFile
 
 T = TypeVar("T", bound=SaveFile)
 
