@@ -3,7 +3,7 @@ from typing import ClassVar, Any
 
 from mosaic import SaveFile, SaveManager
 
-# Concrete Save File
+# concrete SaveFile
 @dataclass
 class GameSave(SaveFile):
     SCHEMA_VERSION: ClassVar[int] = 2
@@ -36,42 +36,40 @@ class GameSave(SaveFile):
         }
 
 
-# Concrete Save Manager
+# concrete SaveManager
 class GameSaveManager(SaveManager[GameSave]):
     def migrate_save(self, data: dict[str, Any], from_version: int) -> None:
-        """Example migration:
-        1 -> 2: introduce 'health' field (default 100)
-        """
-        
         while from_version < self._save_cls.SCHEMA_VERSION:
             match from_version:
                 case 1:
+                    """example migration:
+                    1 -> 2: introduce 'health' field (default 100)
+                    """
                     data["health"] = 100
-                    data["version"] = 2
                     from_version = 2
                 case _:
                     raise RuntimeError(f"No migration path from version {from_version}.")
+            
+            data["version"] = self._save_cls.SCHEMA_VERSION
 
-# Example Usage
 def main():
     manager = GameSaveManager(GameSave)
 
-    # Load save (creates default if missing or corrupted)
-    
+    # load save (creates default if missing or corrupted)
     save_name: str = "player"
     
     save: GameSave = manager.load(save_name)
 
-    print("Loaded save:")
+    print(f"Loaded save: {save_name}")
     print(f"Version: {save.version}")
     print(f"Gold: {save.gold}")
     print(f"Health: {save.health}")
 
-    # Modify save data
+    # modify save data
     save.gold += 50
     save.health -= 10
 
-    # Save it back
+    # save it back
     manager.save("player", save)
 
     print("\nSave updated and written to disk.")
