@@ -14,7 +14,7 @@ class SaveManager(Generic[T], ABC):
         self._save_cls = save_cls
         self._extension = (extension if extension.startswith(".") else f".{extension}")
     
-    def load(self, path: str) -> T:
+    def load(self, path: str, obfuscate: bool = True) -> T:
         """Loads a save file, handling versioning and corruption."""
         
         path = self._with_extension(path)
@@ -25,10 +25,11 @@ class SaveManager(Generic[T], ABC):
 
         try:
             with open(path, "rb") as f:
-                encoded = f.read()
+                raw_bytes = f.read()
 
-            decoded = base64.b64decode(encoded)
-            data = json.loads(decoded.decode("utf-8"))
+            if obfuscate:
+                raw_bytes = base64.b64decode(raw_bytes)
+            data = json.loads(raw_bytes.decode("utf-8"))
 
             self._handle_version(data)
 
@@ -39,7 +40,7 @@ class SaveManager(Generic[T], ABC):
             print(f"[Mosaic] Error loading save at {path}. Renamed to {backup_path}.")
             return self._save_cls.default()
 
-    def save(self, path: str, save: T) -> None:
+    def save(self, path: str, save: T, obfuscate: bool = True) -> None:
         """Saves data atomically."""
         
         path = self._with_extension(path)
@@ -50,10 +51,11 @@ class SaveManager(Generic[T], ABC):
 
         try:
             json_bytes = json.dumps(data, indent=4).encode("utf-8")
-            encoded = base64.b64encode(json_bytes)
+            if obfuscate:
+                json_bytes = base64.b64encode(json_bytes)
 
             with open(temp_path, "wb") as f:
-                f.write(encoded)
+                f.write(json_bytes)
                 f.flush()
                 os.fsync(f.fileno())
 
